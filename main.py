@@ -1,5 +1,8 @@
-print("Hello world!")
-print("Hello world!")
+from pymata4 import pymata4 as p4
 
-print( )
 
+def main():
+    pass
+
+if __name__ == "__main__":
+    main()
