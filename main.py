@@ -1,11 +1,11 @@
 # Authors: ENG1013 Team MI05
 # Last modified: 17 April 2026
-# Version: 1.1.0
+# Version: 1.2.0
 
 # clean all type annotations before submitting!
 
 from pymata4 import pymata4 as p4
-from typing import Callable #clean -> del
+from typing import Callable, TypedDict #clean -> del
 import time
 
 #region pins
@@ -33,8 +33,34 @@ P4_A = 18
 P5_A = 19
 #endregion
 
+#region types
+class TrafficLight(TypedDict):
+    pass
+
+class PedestrianLight(TypedDict):
+    pass
+
+class WarningLight(TypedDict):
+    pass
+
+class FloodlLight(TypedDict):
+    pass
+
+class UltrasonicSensor(TypedDict):
+    pass
+
+class DaylightSensor(TypedDict):
+    pass
+
+class Buzzer(TypedDict):
+    pass
+
+class PushButton(TypedDict):
+    pass
+#endregion
+
 #region constructors
-def new_traffic_light() -> dict:
+def new_traffic_light() -> TrafficLight:
     '''
     Create a traffic light dictionary.
     Params:
@@ -43,7 +69,7 @@ def new_traffic_light() -> dict:
         tl: A dictionary containg information about the traffic light.'''
     return {}
 
-def new_pedestrian_light() -> dict:
+def new_pedestrian_light() -> PedestrianLight:
     '''
     Create a predestrian light dictionary.
     Params:
@@ -52,7 +78,7 @@ def new_pedestrian_light() -> dict:
         pl: A dictionary containg information about the pedestrian light.'''
     return {}
 
-def new_warning_light() -> dict:
+def new_warning_light() -> WarningLight:
     '''
     Create a warning light dictionary.
     Params:
@@ -61,7 +87,7 @@ def new_warning_light() -> dict:
         wl: A dictionary containg information about the warning light.'''
     return {}
 
-def new_floodlight() -> dict:
+def new_floodlight() -> FloodlLight:
     '''
     Create a floodlight dictionary.
     Params:
@@ -70,7 +96,7 @@ def new_floodlight() -> dict:
         fl: A dictionary containg information about the floodlight.'''
     return {}
 
-def new_ultrasonic_sensor() -> dict:
+def new_ultrasonic_sensor() -> UltrasonicSensor:
     '''
     Create an ultrasonic sensor dictionary.
     Params:
@@ -79,7 +105,7 @@ def new_ultrasonic_sensor() -> dict:
         us: A dictionary containg information about the sensor.'''
     return {}
 
-def new_buzzer() -> dict:
+def new_buzzer() -> Buzzer:
     '''
     Create a buzzer dictionary.
     Params:
@@ -88,7 +114,7 @@ def new_buzzer() -> dict:
         pa: A dictionary containg information about the buzzer.'''
     return {}
 
-def new_daylight_sensor() -> dict:
+def new_daylight_sensor() -> DaylightSensor:
     '''
     Create a daylight sensor dictionary.
     Params:
@@ -97,7 +123,7 @@ def new_daylight_sensor() -> dict:
         ds: A dictionary containg information about the sensor.'''
     return {}
 
-def new_push_button() -> dict:
+def new_push_button() -> PushButton:
     '''
     Create a push button dictionary.
     Params:
