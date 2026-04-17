@@ -5,7 +5,7 @@
 # clean all type annotations before submitting!
 
 from pymata4 import pymata4 as p4
-from typing import Callable
+from typing import Callable #clean -> del
 import time
 
 #region pins
