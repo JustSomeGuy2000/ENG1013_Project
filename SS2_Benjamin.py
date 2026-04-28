@@ -1,5 +1,6 @@
 from pymata4 import pymata4
 import time
+import math
 board = pymata4.Pymata4()
  
 # #Pin for US1
@@ -15,6 +16,7 @@ board = pymata4.Pymata4()
 # small sleep to allow sonar to be configured correctly
 time.sleep(0.5) 
 initialTime = time.time()
+pbLastTime = -30
 ser = 5
 rclk = 6
 srclk = 7
@@ -48,107 +50,47 @@ def print_out():
     board.digital_write(rclk, 0)  
 
 def clear_lights():
-    for i in range (16):
-        storage_0()
+    clear_storage()
     print_out()
 
-def clear_storage ():
-    for i in range (16):
+def clear_storage():
+    for _ in range (16):
         storage_0()
 
-def shiftSequence(seq):
-    seq = str(seq)
-    for i in len(seq): #type: ignore - type safe
-        if i == 0:
+def shiftSequence(seq: int):
+    '''Implementation by JEHR'''
+    clear_storage()
+    binLength = math.floor(math.log(seq, 2)) + 1
+    for i in range(binLength):
+        if seq & (2 ** (binLength - i - 1)) == 0:
             storage_0()
-        elif i == 1:
+        else:
             storage_1()
-    print_out()                
+    print_out()
           
 def PL1_PL2(): 
-    clear_storage()
-    for i in range(2):
-        storage_1()
-        storage_0()
-    storage_0()
-    for i in range(2):
-        storage_1()
-        storage_0()
-        storage_0()
-    print_out()
+    shiftSequence(0b10100100100)
     time.sleep(3)
-    clear_storage()
-    storage_1()
-    for i in range(2):
-        storage_1()
-        storage_0()
-        storage_0()
-    print_out()
+    shiftSequence(0b1100100)
     time.sleep(2)
 
 def TL4_TL5_day():
     global initialTime
     global timeNow
     if (timeNow - initialTime) < 5: #TL4 green
-        clear_storage()
-        storage_1()
-        storage_0()
-        storage_1()  
-        for i in range (3):
-            storage_0()  
-        storage_1()
-        for i in range (4):
-            storage_0()
-        storage_1()  
-        print_out()
+        shiftSequence(0b101000100001)
         
     elif 8 > (timeNow - initialTime) >= 5: #20 TL4 yellow
-        
-        clear_storage()
-        storage_1()
-        storage_0()
-        storage_1()
-        for i in range (3):
-            storage_0()
-        storage_1() 
-        for i in range (3):
-            storage_0()
-        storage_1()
-        storage_0()
-        print_out()
+        shiftSequence(0b101000100010)
         # print("b")
 
     
     elif 13 > (timeNow - initialTime) >= 8: #3 TL5 green
-        clear_storage()
-        storage_1()
-        storage_0()
-        storage_1()
-        for i in range (3):
-            storage_0()
-        storage_0()
-        storage_0()
-        storage_1()
-        storage_1()
-        storage_0()
-        storage_0()
-        print_out()
+        shiftSequence(0b101000001100)
         # print("c")
         
     elif 16 > (timeNow - initialTime) >= 13:#10 TL5 Yellow
-        clear_storage()
-        storage_1()
-        storage_0()
-        storage_1()
-        for i in range (3):
-            storage_0()
-        storage_0()
-        storage_1()
-        storage_0()
-        storage_1()
-        storage_0()
-        storage_0()   
-        print_out()
+        shiftSequence(0b101000010100)  
         # print("d")
         
     elif (timeNow - initialTime) >= 16:#3
@@ -159,73 +101,37 @@ def TL4_TL5_night():
     global timeNow
     if (timeNow - initialTime) < 8:#30
         # print("a")
-        clear_storage()
-        storage_1()
-        storage_0()
-        storage_1()  
-        for i in range (3):
-            storage_0()  
-        storage_1()
-        for i in range (4):
-            storage_0()
-        storage_1()  
-        print_out()
+        shiftSequence(0b101000100001) 
     
     elif 11 > (timeNow - initialTime) >= 8: 
-        clear_storage()
-        storage_1()
-        storage_0()
-        storage_1()
-        for i in range (3):
-            storage_0()
-        storage_1() 
-        for i in range (3):
-            storage_0()
-        storage_1()
-        storage_0()
-        print_out()
+        shiftSequence(0b101000100010)
         # print("b")
 
     
     elif 16 > (timeNow - initialTime) >= 11: #3
-        clear_storage()
-        storage_1()
-        storage_0()
-        storage_1()
-        for i in range (3):
-            storage_0()
-        storage_0()
-        storage_0()
-        storage_1()
-        storage_1()
-        storage_0()
-        storage_0()
-        print_out()
+        shiftSequence(0b101000001100)
         # print("c")
         
     elif 19 > (timeNow - initialTime) >= 16:#5
-        clear_storage()
-        storage_1()
-        storage_0()
-        storage_1()
-        for i in range (3):
-            storage_0()
-        storage_0()
-        storage_1()
-        storage_0()
-        storage_1()
-        storage_0()
-        storage_0()   
-        print_out()
+        shiftSequence(0b101000010100)   
         # print("d")
         
     elif (timeNow - initialTime) >= 19:#3
         initialTime = timeNow
-    
+
+def afterButtonPushed():
+    '''Implementation by JEHR'''
+    global initialTime
+    global pbLastTime
+    time.sleep(3)
+    PL1_PL2()
+    initialTime = time.time()
+    pbLastTime = time.time()
+
 def SS2 ():
     time.sleep(0.1)
     global initialTime
-    pbLastTime = -30
+    global pbLastTime
     initialTime = time.time()
     while True:
         global timeNow
@@ -240,165 +146,49 @@ def SS2 ():
                     
                     if (pb_read[0] < 75) and (timeNow - initialTime) < 5:
                         print("PB1 is pressed")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_1() 
-                        for i in range (3):
-                            storage_0()
-                        storage_1()
-                        storage_0()
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000100010)
+                        afterButtonPushed()
                         # TL4_TL5_day()
                         # time.sleep(3) #30   
                         
                     elif (pb_read[0] < 75) and 8 > (timeNow - initialTime) >= 5:
                         
                         print("PB1 is pressed")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_1() 
-                        for i in range (3):
-                            storage_0()
-                        storage_1()
-                        storage_0()
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000100010)
+                        afterButtonPushed()
                         
                     elif (pb_read[0] < 75) and 13 > (timeNow - initialTime) >= 8:
                         print("PB1 is pressed")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_0()   
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000010100) 
+                        afterButtonPushed()
                         
                     elif (pb_read[0] < 75) and 16 > (timeNow - initialTime) >= 13:
                         print("PB1 is pressed")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_0()   
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000010100)  
+                        afterButtonPushed()
                         
                     elif (100 > pb_read[0] >= 75) and (timeNow - initialTime) < 5:
                         print("PB2 is pressed")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_1() 
-                        for i in range (3):
-                            storage_0()
-                        storage_1()
-                        storage_0()
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000100010)
+                        afterButtonPushed()
                         # TL4_TL5_day()
                         # time.sleep(3) #30   
                         
                     elif (100 > pb_read[0] >= 75) and 8 > (timeNow - initialTime) >= 5:
                         
                         print("PB2 is pressed")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_1() 
-                        for i in range (3):
-                            storage_0()
-                        storage_1()
-                        storage_0()
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000100010)
+                        afterButtonPushed()
                         
                     elif (100 > pb_read[0] >= 75) and 13 > (timeNow - initialTime) >= 8:
                         print("PB2 is pressed")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_0()   
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000010100)  
+                        afterButtonPushed()
                         
                     elif (100 > pb_read[0] >= 75) and 16 > (timeNow - initialTime) >= 13:
                         print("PB2 is pressed")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_0()   
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000010100)  
+                        afterButtonPushed()
                     
                     else:
                     # print("day")
@@ -414,165 +204,49 @@ def SS2 ():
                         
                     if (pb_read[0] < 75) and (timeNow - initialTime) < 8:
                         print("PB1 is pressed/N")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_1() 
-                        for i in range (3):
-                            storage_0()
-                        storage_1()
-                        storage_0()
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000100010)
+                        afterButtonPushed()
                         # TL4_TL5_day()
                         # time.sleep(3) #30   
                         
                     elif (pb_read[0] < 75) and 11 > (timeNow - initialTime) >= 8:
                         
                         print("PB1 is pressed/N")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_1() 
-                        for i in range (3):
-                            storage_0()
-                        storage_1()
-                        storage_0()
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000100010)
+                        afterButtonPushed()
                         
                     elif (pb_read[0] < 75) and 16 > (timeNow - initialTime) >= 11:
                         print("PB1 is pressed/N")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_0()   
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000010100)  
+                        afterButtonPushed()
                         
                     elif (pb_read[0] < 75) and 19 > (timeNow - initialTime) >= 16:
                         print("PB1 is pressed/N")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_0()   
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000010100)
+                        afterButtonPushed()
                         
                     elif (100 > pb_read[0] >= 75) and (timeNow - initialTime) < 8:
                         print("PB2 is pressed/N")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_1() 
-                        for i in range (3):
-                            storage_0()
-                        storage_1()
-                        storage_0()
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000100010)
+                        afterButtonPushed()
                         # TL4_TL5_day()
                         # time.sleep(3) #30   
                         
                     elif (100 > pb_read[0] >= 75) and 11 > (timeNow - initialTime) >= 8:
                         
                         print("PB2 is pressed/N")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_1() 
-                        for i in range (3):
-                            storage_0()
-                        storage_1()
-                        storage_0()
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000100010)
+                        afterButtonPushed()
                         
                     elif (100 > pb_read[0] >= 75) and 16 > (timeNow - initialTime) >= 11:
                         print("PB2 is pressed/N")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_0()   
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000010100)
+                        afterButtonPushed()
                         
                     elif (100 > pb_read[0] >= 75) and 19 > (timeNow - initialTime) >= 16:
                         print("PB2 is pressed/N")
-                        clear_storage()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        for i in range (3):
-                            storage_0()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_1()
-                        storage_0()
-                        storage_0()   
-                        print_out()
-                        time.sleep(3)
-                        PL1_PL2()
-                        initialTime = time.time()
-                        pbLastTime = time.time()
+                        shiftSequence(0b101000010100)   
+                        afterButtonPushed()
                         
                     else:
                         # print("day")

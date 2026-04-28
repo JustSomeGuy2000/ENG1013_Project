@@ -25,6 +25,8 @@ P10_PWM = 10
 P11_PWM = 11
 P12 = 12
 P13 = 13
+D_TO_A_CONV = 14
+'''Take away this from the digital pin number to arrive at the analog pin number.'''
 P0_A = 14
 P1_A = 15
 P2_A = 16
@@ -85,6 +87,7 @@ class UltrasonicSensor(TypedDict):
 class DaylightSensor(TypedDict):
     board: p4.Pymata4
     inputPin: int
+    analogEquiv: int # analog_read needs analog pin numbers, not digital
 
 class Buzzer(TypedDict):
     board: p4.Pymata4
@@ -95,6 +98,31 @@ class Buzzer(TypedDict):
 class PushButton(TypedDict):
     board: p4.Pymata4
     inputPin: int
+
+class Components(TypedDict):
+    regs: ShiftRegisters
+    us1: UltrasonicSensor
+    us2: UltrasonicSensor
+    us3: UltrasonicSensor
+    us4: UltrasonicSensor
+    us5: UltrasonicSensor
+    tl1: TrafficLight
+    tl2: TrafficLight
+    tl3: TrafficLight
+    tl4: TrafficLight
+    tl5: TrafficLight
+    tl6: TrafficLight
+    wl1: WarningLight
+    wl2: WarningLight
+    pa1: Buzzer
+    fl1: FloodlLight
+    fl2: FloodlLight
+    ds1: DaylightSensor
+    ds2: DaylightSensor
+    pl1: PedestrianLight
+    pl2: PedestrianLight
+    pb1: PushButton
+    pb2: PushButton
 #endregion
 
 #region constructors
@@ -179,8 +207,8 @@ def new_daylight_sensor(board: p4.Pymata4, inputPin: int) -> DaylightSensor:
         inputPin: Pin number receiving input from the sensor.
     Returns:
         ds: A dictionary containg information about the sensor.'''
-    board.set_pin_mode_analog_input(inputPin)
-    return {"board": board, "inputPin": inputPin}
+    board.set_pin_mode_analog_input(inputPin - D_TO_A_CONV)
+    return {"board": board, "inputPin": inputPin, "analogEquiv": inputPin - D_TO_A_CONV}
 
 def new_push_button(board: p4.Pymata4, inputPin: int) -> PushButton:
     '''
@@ -312,6 +340,7 @@ def ds_is_day(ds: DaylightSensor) -> bool:
         ds: The daylight sensor dictionary.
     Returns:
         isDay: True if its bright enough to be daytime, False otherwise.'''
+    value = ds["board"].analog_read(ds["analogEquiv"])[0]
     raise NotImplementedError
 
 def pb_read(pb: PushButton) -> bool:
@@ -381,7 +410,7 @@ def sr_set_all(sr: ShiftRegisters, seq: Stateset):
         None: None'''
     length = len(seq)
     if length != sr["size"]: # strict checking, errors are better than silent mistakes
-        raise ValueError(f"Incorrect length: {length}")
+        raise ValueError(f"Incorrect length: {length}") #clean -> del (errors might count as extra classes)
     sr["states"] = seq
     for i in range(length): # reverse iteration for proper order
         if seq[length - i - 1] == 0:
@@ -404,12 +433,22 @@ def sr_latch(sr: ShiftRegisters):
 
 #region main
 def main():
-    tickers: list[tuple[float, Callable[[float], bool]]] = []
-    '''A list of tuples. Each tuple has two members: a number and a function. The number is the time elapsed since the tuple was added to the ticker list. Every frame, the number is used as an argument to the function. Then, the number is updated for the next frame. If the function returns False, it is removed from the list.
+    tickers: list[tuple[float, Callable[[float, float, Components], bool]]] = []
+    '''A list of tuples. Each tuple has two members: a number and a function. The number is the time elapsed since the tuple was added to the ticker list. Every frame, the previous time elapsed, an updated time elapsed, an access to the system are used as arguments to the function. If the function returns False, it is removed from the list.
 
-    This means that the function must contain the entire sequence inside it and decide which part of the sequence to play out based on the elapsed time.'''
+    This means that the function must contain the entire sequence inside it and decide which part of the sequence to play out based on the elapsed times.'''
     board = p4.Pymata4()
     overheightLimit: float = 0
+
+    regs = new_shift_registers(board, P10_PWM, P8, P9_PWM, 1)
+    tl1 = new_traffic_light(board, regs, 0, 2, 1, 0)
+    fl1 = new_floodlight(board, regs, 0, 3)
+    fl2 = new_floodlight(board, regs, 0, 4)
+
+    ds1 = new_daylight_sensor(board, P5_A)
+    components: Components = {} #type: ignore - will do later
+
+    sr_set_all(regs, [0] * 8)
 
     try:
         while True:
@@ -418,10 +457,11 @@ def main():
             # all event loop code goes between here...
             # ... and here
 
-            newTickers: list[tuple[float, Callable[[float], bool]]] = []
+            newTickers: list[tuple[float, Callable[[float, float, Components], bool]]] = []
             for ticker in tickers:
-                if (ticker[1](ticker[0])):
-                    newTickers.append((ticker[0] + (time.time() - start), ticker[1]))
+                newTime = ticker[0] + (time.time() - start)
+                if (ticker[1](ticker[0], newTime, components)):
+                    newTickers.append((newTime, ticker[1]))
             tickers = newTickers
     finally:
         board.shutdown()
