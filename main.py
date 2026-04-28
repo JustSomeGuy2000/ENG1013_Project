@@ -39,10 +39,10 @@ class ShiftRegisters(TypedDict):
     inputPin: int
     clockPin: int
     latchPin: int
-    states: int
-    '''The states of all the registers in series, stored in binary, with the largest bit being the first bit of the first register. Needed to restore state after changes to single bits.'''
-    mask: int
-    '''The bitmask to limit results to the length of the registers.'''
+    states: list[int]
+    '''The states of all the registers in series with the first element being the first bit of the first register. Needed to restore state after changes to single bits.'''
+    size: int
+    '''The total bit storage of the registers.'''
 
 class TrafficLight(TypedDict):
     board: p4.Pymata4
@@ -203,7 +203,7 @@ def new_shift_registers(board: p4.Pymata4, inputPin: int, clockPin: int, latchPi
     board.set_pin_mode_digital_output(latchPin)
     board.digital_write(clockPin, 0)
     board.digital_write(latchPin, 0)
-    return {"board": board, "inputPin": inputPin, "clockPin": clockPin, "latchPin": latchPin, "states": 0, "mask": ~(0b1 << (8 * count + 1))}
+    return {"board": board, "inputPin": inputPin, "clockPin": clockPin, "latchPin": latchPin, "states": [0 for _ in range(count * 8)], "size": count * 8}
 #endregion
 
 #region interface
@@ -338,6 +338,16 @@ def sr_set_state(sr: ShiftRegisters, regId: int, seq: list[int]):
         sr: The shift register chain.
         regId: Register number to target.
         seq: 8 1's or 0's representing the final state of the register.
+    Returns:
+        None: None'''
+    pass
+
+def sr_set_all(sr: ShiftRegisters, seq: list[int]):
+    '''
+    Set the entire state of a shift register chain.
+    Params:
+        sr: The shift register chain.
+        seq: An list representing the final state of the entire chain.
     Returns:
         None: None'''
     pass
