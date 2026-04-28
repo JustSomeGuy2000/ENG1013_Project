@@ -5,7 +5,7 @@
 # clean all type annotations before submitting!
 
 from pymata4 import pymata4 as p4
-from typing import Callable, TypedDict #clean -> del
+from typing import Callable, TypedDict, Literal #clean -> del
 import time
 
 #region pins
@@ -34,12 +34,18 @@ P5_A = 19
 #endregion
 
 #region types
+State = Literal[1, 0]
+Stateset = list[State]
+
 class ShiftRegisters(TypedDict):
     board: p4.Pymata4
     inputPin: int
+    '''SER'''
     clockPin: int
+    '''SRCLCK'''
     latchPin: int
-    states: list[int]
+    '''RCLCK'''
+    states: Stateset
     '''The states of all the registers in series with the first element being the first bit of the first register. Needed to restore state after changes to single bits.'''
     size: int
     '''The total bit storage of the registers.'''
@@ -214,7 +220,9 @@ def tl_turn_red(tl: TrafficLight):
         tl: The traffic light dictionary.
     Returns:
         None: None'''
-    pass
+    sr_set_bit(tl["regs"], tl["regId"], tl["redBit"], 1)
+    sr_set_bit(tl["regs"], tl["regId"], tl["yellowBit"], 0)
+    sr_set_bit(tl["regs"], tl["regId"], tl["greenBit"], 0)
 
 def tl_turn_yellow(tl: TrafficLight):
     '''
@@ -223,7 +231,9 @@ def tl_turn_yellow(tl: TrafficLight):
         tl: The traffic light dictionary.
     Returns:
         None: None'''
-    pass
+    sr_set_bit(tl["regs"], tl["regId"], tl["redBit"], 0)
+    sr_set_bit(tl["regs"], tl["regId"], tl["yellowBit"], 1)
+    sr_set_bit(tl["regs"], tl["regId"], tl["greenBit"], 0)
 
 def tl_turn_green(tl: TrafficLight):
     '''
@@ -232,7 +242,9 @@ def tl_turn_green(tl: TrafficLight):
         tl: The traffic light dictionary.
     Returns:
         None: None'''
-    pass
+    sr_set_bit(tl["regs"], tl["regId"], tl["redBit"], 0)
+    sr_set_bit(tl["regs"], tl["regId"], tl["yellowBit"], 0)
+    sr_set_bit(tl["regs"], tl["regId"], tl["greenBit"], 1)
 
 def pl_turn_green(pl: PedestrianLight):
     '''
@@ -241,7 +253,8 @@ def pl_turn_green(pl: PedestrianLight):
         pl: The pedestrian light dictionary.
     Returns:
         None: None'''
-    pass
+    sr_set_bit(pl["regs"], pl["regId"], pl["greenBit"], 1)
+    sr_set_bit(pl["regs"], pl["regId"], pl["redBit"], 0)
 
 def pl_turn_red(pl: PedestrianLight):
     '''
@@ -250,27 +263,28 @@ def pl_turn_red(pl: PedestrianLight):
         pl: The pedestrian light dictionary.
     Returns:
         None: None'''
-    pass
+    sr_set_bit(pl["regs"], pl["regId"], pl["greenBit"], 0)
+    sr_set_bit(pl["regs"], pl["regId"], pl["redBit"], 1)
 
-def wl_switch(wl: FloodlLight, on: bool):
+def wl_switch(wl: FloodlLight, on: State):
     '''
     Switch a warning light on or off.
     Params:
         pl: The warning light dictionary.
-        on: True to switch on, False to switch off.
+        on: 1 to switch on, 0 to switch off.
     Returns:
         None: None'''
-    pass
+    sr_set_bit(wl["regs"], wl["regId"], wl["bit"], on)
 
-def fl_switch(wl: FloodlLight, on: bool):
+def fl_switch(fl: FloodlLight, on: State):
     '''
     Switch a floodlight on or off.
     Params:
         pl: The floodlight dictionary.
-        on: True to switch on, False to switch off.
+        on: 1 to switch on, 0 to switch off.
     Returns:
         None: None'''
-    pass
+    sr_set_bit(fl["regs"], fl["regId"], fl["bit"], on)
 
 def us_read(us: UltrasonicSensor) -> int:
     '''
@@ -279,17 +293,17 @@ def us_read(us: UltrasonicSensor) -> int:
         us: The sensor dictionary.
     Returns:
         distance: The value read.'''
-    return 0
+    return us["board"].sonar_read(us["triggerPin"])[0]
 
-def pa_sound(pa: Buzzer, on: bool):
+def pa_sound(pa: Buzzer, on: State):
     '''
     Switch a buzzer on or off.
     Params:
         pl: The buzzer dictionary.
-        on: True to switch on, False to switch off.
+        on: 1 to switch on, 0 to switch off.
     Returns:
         None: None'''
-    pass
+    sr_set_bit(pa["regs"], pa["regId"], pa["bit"], on)
 
 def ds_is_day(ds: DaylightSensor) -> bool:
     '''
@@ -298,7 +312,7 @@ def ds_is_day(ds: DaylightSensor) -> bool:
         ds: The daylight sensor dictionary.
     Returns:
         isDay: True if its bright enough to be daytime, False otherwise.'''
-    return True
+    raise NotImplementedError
 
 def pb_read(pb: PushButton) -> bool:
     '''
@@ -307,42 +321,57 @@ def pb_read(pb: PushButton) -> bool:
         pb: The push button dictionary.
     Returns:
         pushed: True if the button is currently being pushed, False otherwise.'''
-    return False
+    return pb["board"].digital_read(pb["inputPin"])[0] == 1
 
-def sr_store_0(sr: ShiftRegisters, regId: int, bit: int):
+def sr_read(sr: ShiftRegisters, regId: int, bit: int) -> State:
     '''
-    Set a bit to 0 a shift register in a chain.
+    Read the value of a single bit from the shift register chain.
     Params:
         sr: The shift register chain.
-        regId: Register number to target.
-        bit: Bit index of the register to change.
-    Returns:
-        None: None'''
-    pass
+        regId: Register number to target (starting from 0).
+        bit: Bit number to read (0-7).'''
+    return sr["states"][regId * 8 + bit]
 
-def sr_store_1(sr: ShiftRegisters, regId: int, bit: int):
+def sr_store_0(sr: ShiftRegisters):
     '''
-    Set a bit to 1 a shift register in a chain.
+    Push 0 to the shift register chain.
     Params:
         sr: The shift register chain.
-        regId: Register number to target.
-        bit: Bit index of the register to change.
     Returns:
         None: None'''
-    pass
+    board = sr["board"]
+    board.digital_write(sr["inputPin"], 0)
+    board.digital_write(sr["clockPin"], 1)
+    board.digital_write(sr["clockPin"], 0)
 
-def sr_set_state(sr: ShiftRegisters, regId: int, seq: list[int]):
+def sr_store_1(sr: ShiftRegisters):
     '''
-    Set the entire state of a shift register in a chain.
+    Push 1 to the shift register chain.
     Params:
         sr: The shift register chain.
-        regId: Register number to target.
-        seq: 8 1's or 0's representing the final state of the register.
     Returns:
         None: None'''
-    pass
+    board = sr["board"]
+    board.digital_write(sr["inputPin"], 1)
+    board.digital_write(sr["clockPin"], 1)
+    board.digital_write(sr["clockPin"], 0)
 
-def sr_set_all(sr: ShiftRegisters, seq: list[int]):
+def sr_set_bit(sr: ShiftRegisters, regId: int, bit: int, setTo: State):
+    '''
+    Set the state of a single bit in a shift register chain.
+    Params:
+        sr: The shift register chain.
+        regId: Register number to target (starting from 0).
+        bit: Bit number to change (0-7).
+        setTo: What to change the bit to.
+    Returns:
+        None: None'''
+    final = sr["states"][:8 * regId + bit]
+    final.append(setTo)
+    final += sr["states"][8 * regId + bit + 1:]
+    sr_set_all(sr, final)
+
+def sr_set_all(sr: ShiftRegisters, seq: Stateset):
     '''
     Set the entire state of a shift register chain.
     Params:
@@ -350,7 +379,16 @@ def sr_set_all(sr: ShiftRegisters, seq: list[int]):
         seq: An list representing the final state of the entire chain.
     Returns:
         None: None'''
-    pass
+    length = len(seq)
+    if length != sr["size"]: # strict checking, errors are better than silent mistakes
+        raise ValueError(f"Incorrect length: {length}")
+    sr["states"] = seq
+    for i in range(length): # reverse iteration for proper order
+        if seq[length - i - 1] == 0:
+            sr_store_0(sr)
+        else:
+            sr_store_1(sr)
+    sr_latch(sr)
 
 def sr_latch(sr: ShiftRegisters):
     '''
@@ -359,7 +397,9 @@ def sr_latch(sr: ShiftRegisters):
         sr: The shift registers.
     Returns:
         None: None'''
-    pass
+    board = sr["board"]
+    board.digital_write(sr["latchPin"], 1)
+    board.digital_write(sr["latchPin"], 0)
 #endregion
 
 #region main
