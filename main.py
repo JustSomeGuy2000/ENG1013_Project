@@ -1,6 +1,6 @@
 # Authors: ENG1013 Team MI05
-# Last modified: 17 April 2026
-# Version: 1.2.0
+# Last modified: 28 April 2026
+# Version: 2.0.0
 
 # clean all type annotations before submitting!
 
@@ -34,107 +34,180 @@ P5_A = 19
 #endregion
 
 #region types
+class ShiftRegisters(TypedDict):
+    board: p4.Pymata4
+    inputPin: int
+    clockPin: int
+    latchPin: int
+    states: int
+    '''The states of all the registers in series, stored in binary, with the largest bit being the first bit of the first register. Needed to restore state after changes to single bits.'''
+    mask: int
+    '''The bitmask to limit results to the length of the registers.'''
+
 class TrafficLight(TypedDict):
-    pass
+    board: p4.Pymata4
+    regs: ShiftRegisters
+    regId: int
+    redBit: int
+    yellowBit: int
+    greenBit: int
 
 class PedestrianLight(TypedDict):
-    pass
+    board: p4.Pymata4
+    regs: ShiftRegisters
+    regId: int
+    redBit: int
+    greenBit: int
 
 class WarningLight(TypedDict):
-    pass
+    board: p4.Pymata4
+    regs: ShiftRegisters
+    regId: int
+    bit: int
 
 class FloodlLight(TypedDict):
-    pass
+    board: p4.Pymata4
+    regs: ShiftRegisters
+    regId: int
+    bit: int
 
 class UltrasonicSensor(TypedDict):
-    pass
+    board: p4.Pymata4
+    triggerPin: int
+    echoPin: int
 
 class DaylightSensor(TypedDict):
-    pass
+    board: p4.Pymata4
+    inputPin: int
 
 class Buzzer(TypedDict):
-    pass
+    board: p4.Pymata4
+    regs: ShiftRegisters
+    regId: int
+    bit: int
 
 class PushButton(TypedDict):
-    pass
+    board: p4.Pymata4
+    inputPin: int
 #endregion
 
 #region constructors
-def new_traffic_light() -> TrafficLight:
+def new_traffic_light(board: p4.Pymata4, regs: ShiftRegisters, regId: int, redBit: int, yellowBit: int, greenBit: int) -> TrafficLight:
     '''
     Create a traffic light dictionary.
     Params:
-        None: for now
+        regId: Register number of the light.
+        redBit: Bit of the register the red light is connected to.
+        yellowBit: Bit of the register the yellow light is connected to.
+        greenBit: Bit of the register the green light is connected to.
     Returns:
         tl: A dictionary containg information about the traffic light.'''
-    return {}
+    return {"board": board, "regs": regs, "regId": regId, "redBit": redBit, "yellowBit": yellowBit, "greenBit": greenBit}
 
-def new_pedestrian_light() -> PedestrianLight:
+def new_pedestrian_light(board: p4.Pymata4, regs: ShiftRegisters, regId: int, redBit: int, greenBit: int) -> PedestrianLight:
     '''
     Create a predestrian light dictionary.
     Params:
-        None: for now
+        board: The parent board.
+        regs: The shift registers this connects to.
+        regId: Register number of the light.
+        redBit: Bit of the register the red light is connected to.
+        greenBit: Bit of the register the green light is connected to.
     Returns:
         pl: A dictionary containg information about the pedestrian light.'''
-    return {}
+    return {"board": board, "regs": regs, "regId": regId, "redBit": redBit, "greenBit": greenBit}
 
-def new_warning_light() -> WarningLight:
+def new_warning_light(board: p4.Pymata4, regs: ShiftRegisters, regId: int, bit: int) -> WarningLight:
     '''
     Create a warning light dictionary.
     Params:
-        None: for now
+        board: The parent board.
+        regs: The shift registers this connects to.
+        regId: Register number of the light.
+        bit: Bit of the register the light is connected to.
     Returns:
         wl: A dictionary containg information about the warning light.'''
-    return {}
+    return {"board": board, "regs": regs, "regId": regId, "bit": bit}
 
-def new_floodlight() -> FloodlLight:
+def new_floodlight(board: p4.Pymata4, regs: ShiftRegisters, regId: int, bit: int) -> FloodlLight:
     '''
     Create a floodlight dictionary.
     Params:
-        None: for now
+        board: The parent board.
+        regs: The shift registers this connects to.
+        regId: Register number of the light.
+        bit: Bit of the register the light is connected to.
     Returns:
         fl: A dictionary containg information about the floodlight.'''
-    return {}
+    return {"board": board, "regs": regs, "regId": regId, "bit": bit}
 
-def new_ultrasonic_sensor() -> UltrasonicSensor:
+def new_ultrasonic_sensor(board: p4.Pymata4, triggerPin: int, echoPin: int) -> UltrasonicSensor:
     '''
-    Create an ultrasonic sensor dictionary.
+    Create an ultrasonic sensor dictionary. Registers the pins for sonar use.
     Params:
-        None: for now
+        board: The parent board.
+        triggerPin: Pin number for triggering the sensor.
+        echoPin: Pin number receiving input from the sensor.
     Returns:
         us: A dictionary containg information about the sensor.'''
-    return {}
+    board.set_pin_mode_sonar(triggerPin, echoPin)
+    return {"board": board, "triggerPin": triggerPin, "echoPin": echoPin}
 
-def new_buzzer() -> Buzzer:
+def new_buzzer(board: p4.Pymata4, regs: ShiftRegisters, regId: int, bit: int) -> Buzzer:
     '''
-    Create a buzzer dictionary.
+    Create a buzzer dictionary
     Params:
-        None: for now
+        board: The parent board.
+        regs: The shift registers this connects to.
+        regId: Register number of the buzzer.
+        bit: Which bit of the register the buzzer is connected to.
     Returns:
         pa: A dictionary containg information about the buzzer.'''
-    return {}
+    return {"board": board, "regs": regs, "regId": regId, "bit": bit}
 
-def new_daylight_sensor() -> DaylightSensor:
+def new_daylight_sensor(board: p4.Pymata4, inputPin: int) -> DaylightSensor:
     '''
-    Create a daylight sensor dictionary.
+    Create a daylight sensor dictionary. Registers the pin as analog input.
     Params:
-        None: for now
+        board: The parent board.
+        inputPin: Pin number receiving input from the sensor.
     Returns:
         ds: A dictionary containg information about the sensor.'''
-    return {}
+    board.set_pin_mode_analog_input(inputPin)
+    return {"board": board, "inputPin": inputPin}
 
-def new_push_button() -> PushButton:
+def new_push_button(board: p4.Pymata4, inputPin: int) -> PushButton:
     '''
-    Create a push button dictionary.
+    Create a push button dictionary. Registers the pin as input.
     Params:
-        None: for now
+        board: The parent board.
+        inputPin: Pin number receiving input from the button.
     Returns:
         pb: A dictionary containg information about the button.'''
-    return {}
+    board.set_pin_mode_digital_input(inputPin)
+    return {"board": board, "inputPin": inputPin}
+
+def new_shift_registers(board: p4.Pymata4, inputPin: int, clockPin: int, latchPin: int, count: int) -> ShiftRegisters:
+    '''
+    Create a shift registers dictionary. Registers the pins as output and initialises them.
+    Params:
+        board: The parent board.
+        inputPin: Pin number for SER.
+        clockPin: Pin number for SRCLCK.
+        latchPin: Pin number for RCLCK.
+        count: Number of registers in the series.
+    Returns:
+        sr: A dictionary containg information about the registers.'''
+    board.set_pin_mode_digital_output(inputPin)
+    board.set_pin_mode_digital_output(clockPin)
+    board.set_pin_mode_digital_output(latchPin)
+    board.digital_write(clockPin, 0)
+    board.digital_write(latchPin, 0)
+    return {"board": board, "inputPin": inputPin, "clockPin": clockPin, "latchPin": latchPin, "states": 0, "mask": ~(0b1 << (8 * count + 1))}
 #endregion
 
 #region interface
-def tl_turn_red(tl: dict):
+def tl_turn_red(tl: TrafficLight):
     '''
     Turn a traffic light red.
     Params:
@@ -143,7 +216,7 @@ def tl_turn_red(tl: dict):
         None: None'''
     pass
 
-def tl_turn_yellow(tl: dict):
+def tl_turn_yellow(tl: TrafficLight):
     '''
     Turn a traffic light yellow.
     Params:
@@ -152,7 +225,7 @@ def tl_turn_yellow(tl: dict):
         None: None'''
     pass
 
-def tl_turn_green(tl: dict):
+def tl_turn_green(tl: TrafficLight):
     '''
     Turn a traffic light green.
     Params:
@@ -161,7 +234,7 @@ def tl_turn_green(tl: dict):
         None: None'''
     pass
 
-def pl_turn_green(pl: dict):
+def pl_turn_green(pl: PedestrianLight):
     '''
     Turn a pedestrian light yellow.
     Params:
@@ -170,7 +243,7 @@ def pl_turn_green(pl: dict):
         None: None'''
     pass
 
-def pl_turn_red(pl: dict):
+def pl_turn_red(pl: PedestrianLight):
     '''
     Turn a pedestrian light red.
     Params:
@@ -179,7 +252,7 @@ def pl_turn_red(pl: dict):
         None: None'''
     pass
 
-def wl_switch(wl: dict, on: bool):
+def wl_switch(wl: FloodlLight, on: bool):
     '''
     Switch a warning light on or off.
     Params:
@@ -189,7 +262,7 @@ def wl_switch(wl: dict, on: bool):
         None: None'''
     pass
 
-def fl_switch(wl: dict, on: bool):
+def fl_switch(wl: FloodlLight, on: bool):
     '''
     Switch a floodlight on or off.
     Params:
@@ -199,7 +272,7 @@ def fl_switch(wl: dict, on: bool):
         None: None'''
     pass
 
-def us_read(us: dict) -> int:
+def us_read(us: UltrasonicSensor) -> int:
     '''
     Read the value from an ultrasonic sensor.
     Params:
@@ -208,7 +281,7 @@ def us_read(us: dict) -> int:
         distance: The value read.'''
     return 0
 
-def pa_sound(pa: dict, on: bool):
+def pa_sound(pa: Buzzer, on: bool):
     '''
     Switch a buzzer on or off.
     Params:
@@ -218,7 +291,7 @@ def pa_sound(pa: dict, on: bool):
         None: None'''
     pass
 
-def ds_is_day(ds: dict) -> bool:
+def ds_is_day(ds: DaylightSensor) -> bool:
     '''
     Read the daytime status from a daylight sensor.
     Params:
@@ -227,7 +300,7 @@ def ds_is_day(ds: dict) -> bool:
         isDay: True if its bright enough to be daytime, False otherwise.'''
     return True
 
-def pb_read(pb: dict) -> bool:
+def pb_read(pb: PushButton) -> bool:
     '''
     Read the state of a push button.
     Params:
@@ -235,6 +308,48 @@ def pb_read(pb: dict) -> bool:
     Returns:
         pushed: True if the button is currently being pushed, False otherwise.'''
     return False
+
+def sr_store_0(sr: ShiftRegisters, regId: int, bit: int):
+    '''
+    Set a bit to 0 a shift register in a chain.
+    Params:
+        sr: The shift register chain.
+        regId: Register number to target.
+        bit: Bit index of the register to change.
+    Returns:
+        None: None'''
+    pass
+
+def sr_store_1(sr: ShiftRegisters, regId: int, bit: int):
+    '''
+    Set a bit to 1 a shift register in a chain.
+    Params:
+        sr: The shift register chain.
+        regId: Register number to target.
+        bit: Bit index of the register to change.
+    Returns:
+        None: None'''
+    pass
+
+def sr_set_state(sr: ShiftRegisters, regId: int, seq: list[int]):
+    '''
+    Set the entire state of a shift register in a chain.
+    Params:
+        sr: The shift register chain.
+        regId: Register number to target.
+        seq: 8 1's or 0's representing the final state of the register.
+    Returns:
+        None: None'''
+    pass
+
+def sr_latch(sr: ShiftRegisters):
+    '''
+    Latch some shift registers, setting their output.
+    Params:
+        sr: The shift registers.
+    Returns:
+        None: None'''
+    pass
 #endregion
 
 #region main
